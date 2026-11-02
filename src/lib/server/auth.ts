@@ -1,5 +1,5 @@
 import "server-only";
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { createHmac, randomBytes, scrypt as _scrypt, timingSafeEqual } from "node:crypto";
 import { promisify } from "node:util";
@@ -119,7 +119,14 @@ export async function signUp(email: string, password: string, fullName: string):
     return { error: null };
   }
   const supabase = await supabaseClient();
-  const { data, error } = await supabase.auth.signUp({ email, password, options: { data: { full_name: fullName } } });
+  // Confirmation emails link back to this site (SITE_URL when set, otherwise the address being used now).
+  // Supabase only honours it if the address is in its allowed redirect list; otherwise it uses its Site URL.
+  const h = await headers();
+  const origin = process.env.SITE_URL ?? (h.get("host") ? `${h.get("x-forwarded-proto") ?? "https"}://${h.get("host")}` : undefined);
+  const { data, error } = await supabase.auth.signUp({ email, password, options: {
+    data: { full_name: fullName },
+    emailRedirectTo: origin ? `${origin}/login?confirmed=1` : undefined,
+  } });
   if (error) return { error: error.message };
   return { error: null, needsEmailConfirmation: !data.session };
 }
