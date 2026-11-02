@@ -1,0 +1,34 @@
+@import "tailwindcss";
+
+@theme {
+  --color-navy-950: #0b1f2a;
+  --color-navy-900: #0f2a38;
+  --color-navy-800: #163a4c;
+  --color-navy-700: #1f4d63;
+  --color-navy-200: #b9cdd6;
+  --color-navy-100: #dfe9ee;
+  --color-brand-700: #1e6b45;
+  --color-brand-600: #24804f;
+  --color-brand-500: #2e9a60;
+  --color-brand-100: #e3f3ea;
+  --color-brand-50: #f1f9f4;
+  --color-canvas: #f5f7f8;
+  --color-line: #e2e7ea;
+  --color-ink: #17242b;
+  --color-muted: #5b6b73;
+  --font-sans: "Segoe UI", "Noto Sans", "Noto Sans Arabic", Tahoma, system-ui, -apple-system, sans-serif;
+}
+
+html { color: var(--color-ink); background: var(--color-canvas); }
+body { font-family: var(--font-sans); font-size: 14px; }
+
+/* Arabic text gets a font with good Arabic glyphs and comfortable line height. */
+:lang(ar), [dir="rtl"] { font-family: "Noto Sans Arabic", "Segoe UI", Tahoma, sans-serif; line-height: 1.7; }
+
+:focus-visible { outline: 2px solid var(--color-brand-500); outline-offset: 2px; }
+
+.tabular { font-variant-numeric: tabular-nums; }
+
+@media print {
+  .no-print { display: none !important; }
+}

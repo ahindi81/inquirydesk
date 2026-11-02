@@ -1,0 +1,24 @@
+// Quick smoke test: sign up, open demo workspace, view dashboard and catalogue.
+import { chromium } from "playwright-core";
+const BASE = process.env.BASE ?? "http://localhost:3000";
+const OUT = process.env.OUT ?? "/tmp/claude-0/shots";
+const browser = await chromium.launch({ executablePath: "/usr/bin/google-chrome", args: ["--no-sandbox"] });
+const page = await browser.newPage({ viewport: { width: 1366, height: 900 } });
+const errors = [];
+page.on("pageerror", (e) => errors.push(e.message));
+page.on("console", (m) => m.type() === "error" && errors.push(m.text()));
+const email = `smoke${Date.now()}@example.com`;
+await page.goto(`${BASE}/signup`);
+await page.fill("#fullName", "Smoke Tester");
+await page.fill("#email", email);
+await page.fill("#password", "correct-horse-battery");
+await page.click("button[type=submit]");
+await page.waitForURL("**/onboarding", { timeout: 60000 });
+await page.screenshot({ path: `${OUT}/01-onboarding.png`, fullPage: true });
+await page.click("text=Open demo workspace");
+await page.waitForURL(BASE + "/", { timeout: 60000 });
+await page.screenshot({ path: `${OUT}/02-dashboard.png`, fullPage: true });
+await page.goto(`${BASE}/catalogue`);
+await page.screenshot({ path: `${OUT}/03-catalogue.png`, fullPage: true });
+console.log("email", email, "errors", JSON.stringify(errors));
+await browser.close();

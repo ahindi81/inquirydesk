@@ -1,0 +1,28 @@
+# Render Blueprint for InquiryDesk (online version).
+# The database password is never stored here: Render asks for DATABASE_URL when the Blueprint is created.
+services:
+  - type: web
+    name: inquirydesk
+    runtime: node
+    region: singapore          # closest Render region to the Supabase database (Mumbai)
+    plan: free                 # change to "starter" to avoid sleeping after inactivity
+    buildCommand: npm ci && npm run build
+    startCommand: npm start -- -H 0.0.0.0
+    healthCheckPath: /login
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: NEXT_PUBLIC_SUPABASE_URL
+        value: https://rsfjfuqjhzrhgapdduso.supabase.co
+      - key: NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
+        value: sb_publishable_lkQO_jlZfUGwxijzYcin-g_kYybql4h
+      - key: AUTH_DRIVER
+        value: supabase
+      - key: STORAGE_DRIVER
+        value: supabase
+      - key: DATABASE_URL
+        sync: false            # entered privately in the Render dashboard
+      - key: AI_PROVIDER
+        sync: false            # optional: "anthropic"
+      - key: ANTHROPIC_API_KEY
+        sync: false            # optional

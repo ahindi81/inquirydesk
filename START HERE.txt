@@ -1,0 +1,12 @@
+HOW TO START INQUIRYDESK (Windows)
+
+1. Double-click "Start InquiryDesk.bat".
+   - If Windows shows "Windows protected your PC", click "More info" then "Run anyway".
+   - If Node.js is missing, the download page opens. Install the "LTS" version, then double-click again.
+2. The first time, it installs the app (a few minutes) and asks for your Supabase DATABASE password.
+   Type it and press Enter (nothing appears while typing — that's normal).
+3. Your browser opens http://localhost:3000. Click "Create an account".
+   If Supabase emails you a confirmation link, click it, then come back and sign in.
+4. Keep the black window open while you use the app. Close it to stop.
+
+Next time, just double-click "Start InquiryDesk.bat" again.
