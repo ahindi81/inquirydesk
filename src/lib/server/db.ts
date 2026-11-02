@@ -18,7 +18,18 @@ function createPool() {
   });
 }
 
-export const sql: postgres.Sql = globalForDb.__sql ?? (globalForDb.__sql = createPool());
+function pool(): postgres.Sql {
+  return globalForDb.__sql ?? (globalForDb.__sql = createPool());
+}
+
+// Connected lazily on first use, so building the app never needs database credentials.
+export const sql: postgres.Sql = new Proxy(function () {} as unknown as postgres.Sql, {
+  apply: (_t, _this, args) => (pool() as unknown as (...a: unknown[]) => unknown)(...args),
+  get: (_t, prop) => {
+    const v = Reflect.get(pool() as object, prop);
+    return typeof v === "function" ? v.bind(pool()) : v;
+  },
+});
 export type Tx = postgres.TransactionSql;
 
 /**
