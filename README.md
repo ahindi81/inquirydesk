@@ -35,7 +35,7 @@ The first complete workflow, tested end to end in a browser:
 - Email invitations for team members (team page lists members and changes roles only).
 - OpenAI provider (Anthropic is implemented; OpenAI shows a clear "not implemented" message).
 - Scanned documents without Tesseract on the server are reported as unreadable (not sent to the AI's own reader yet).
-- **Not yet tested against a real Supabase project or a real Anthropic API key** (see "Testing" below).
+- Not yet tested with a real Anthropic API key (the AI failure path is tested).
 
 ## Set up (on your computer)
 
@@ -51,6 +51,16 @@ The first complete workflow, tested end to end in a browser:
    npm run dev
    ```
 6. Open http://localhost:3000, create an account, then a company workspace or the demo workspace.
+
+## Online version (Render)
+
+- Live at https://inquirydesk.onrender.com, built automatically from the `main` branch of this repository.
+- Settings live in Render → inquirydesk → Environment (never in the repository): `DATABASE_URL` uses a dedicated
+  least-privilege database login (`inquirydesk_app`) that can only act as a signed-in user, so all row-level security applies.
+- On every start the server logs `[startup] Database connection OK` or the exact failure (password hidden).
+- Free plan: sleeps after ~15 minutes idle; first visit then takes up to a minute. Upgrade to "Starter" to keep it always on.
+- Supabase → Authentication → URL Configuration should list `https://inquirydesk.onrender.com/**` and
+  `http://localhost:3000/**` as redirect URLs so confirmation emails return to the right site.
 
 ## Testing
 
