@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { createHmac, randomBytes, scrypt as _scrypt, timingSafeEqual } from "node:crypto";
 import { promisify } from "node:util";
 import { createServerClient } from "@supabase/ssr";
+import { createClient } from "@supabase/supabase-js";
 import { sql, asUser } from "./db";
 
 const scrypt = promisify(_scrypt) as (pw: string, salt: Buffer, len: number) => Promise<Buffer>;
@@ -154,10 +155,14 @@ export async function requestPasswordReset(email: string): Promise<string | null
   email = email.trim().toLowerCase();
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return "Enter a valid email address.";
   if (driver() === "local") return "Password reset by email is not available in local development mode.";
-  const supabase = await supabaseClient();
+  // Reset links use the "implicit" flow: the emailed link carries its own one-time
+  // sign-in, so it works in any browser or device, not only the one that asked for it.
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL, key = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
+  if (!url || !key) throw new Error("Supabase URL / publishable key are not configured.");
+  const supabase = createClient(url, key, { auth: { flowType: "implicit", persistSession: false, autoRefreshToken: false, detectSessionInUrl: false } });
   const origin = await siteOrigin();
   const { error } = await supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: origin ? `${origin}/auth/callback?next=/reset-password` : undefined,
+    redirectTo: origin ? `${origin}/reset-password` : undefined,
   });
   if (error && /rate limit|too many/i.test(error.message))
     return "Too many emails were requested. Please wait a few minutes and try again.";
@@ -180,6 +185,16 @@ export async function completeEmailLink(params: { code?: string | null; tokenHas
     return null;
   }
   return "This link is incomplete. Request a new one.";
+}
+
+/** Starts a session from the tokens a reset link delivers (checked by Supabase before use). */
+export async function startSessionFromLinkTokens(accessToken: string, refreshToken: string): Promise<string | null> {
+  if (driver() === "local") return "Not available in local development mode.";
+  if (!accessToken || !refreshToken || accessToken.length > 4096 || refreshToken.length > 512) return "This link is incomplete. Request a new one.";
+  const supabase = await supabaseClient();
+  const { data, error } = await supabase.auth.setSession({ access_token: accessToken, refresh_token: refreshToken });
+  if (error || !data.session) return "This link has expired or was already used. Request a new one.";
+  return null;
 }
 
 export async function updatePassword(password: string): Promise<string | null> {

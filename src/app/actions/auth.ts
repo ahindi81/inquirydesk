@@ -1,7 +1,7 @@
 "use server";
 import { redirect } from "next/navigation";
 import { z } from "zod";
-import { signIn, signOut, signUp, getSessionUser, setActiveCompany, listMemberships, requestPasswordReset, updatePassword } from "@/lib/server/auth";
+import { signIn, signOut, signUp, getSessionUser, setActiveCompany, listMemberships, requestPasswordReset, updatePassword, startSessionFromLinkTokens } from "@/lib/server/auth";
 import { asUser } from "@/lib/server/db";
 import { createDemoWorkspace } from "@/lib/server/demo";
 
@@ -68,7 +68,7 @@ export async function switchCompanyAction(fd: FormData) {
 export async function forgotPasswordAction(_: FormState, fd: FormData): Promise<FormState> {
   const err = await requestPasswordReset(String(fd.get("email") ?? ""));
   if (err) return { error: err };
-  return { message: "If an account exists for this email, we've sent a link to reset your password. Check your inbox (and spam folder), then open the link in this same browser." };
+  return { message: "If an account exists for this email, we've sent a link to reset your password. Check your inbox (and spam folder), then click the link in the email." };
 }
 
 export async function resetPasswordAction(_: FormState, fd: FormData): Promise<FormState> {
@@ -78,4 +78,9 @@ export async function resetPasswordAction(_: FormState, fd: FormData): Promise<F
   const err = await updatePassword(password);
   if (err) return { error: err };
   redirect("/?password=updated");
+}
+
+export async function startRecoveryAction(accessToken: string, refreshToken: string): Promise<{ error?: string }> {
+  const err = await startSessionFromLinkTokens(String(accessToken), String(refreshToken));
+  return err ? { error: err } : {};
 }
