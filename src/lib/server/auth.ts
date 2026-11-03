@@ -102,7 +102,15 @@ export async function signIn(email: string, password: string): Promise<string | 
   }
   const supabase = await supabaseClient();
   const { error } = await supabase.auth.signInWithPassword({ email, password });
-  return error ? "Email or password is incorrect." : null;
+  if (!error) return null;
+  if (error.code === "email_not_confirmed" || /not confirmed/i.test(error.message)) {
+    // Send a fresh confirmation link so the person isn't stuck.
+    const origin = await siteOrigin();
+    await supabase.auth.resend({ type: "signup", email, options: { emailRedirectTo: origin ? `${origin}/login?confirmed=1` : undefined } });
+    return "This email address isn't confirmed yet. We've sent a new confirmation link: open it, then sign in.";
+  }
+  if (/rate limit|too many/i.test(error.message)) return "Too many attempts. Please wait a few minutes and try again.";
+  return "Email or password is incorrect.";
 }
 
 export async function signUp(email: string, password: string, fullName: string):
