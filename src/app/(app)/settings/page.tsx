@@ -20,7 +20,7 @@ export default async function SettingsPage() {
       <Card title="Document processing engine">
         <p className="text-sm"><Badge tone={ai.isAI ? "green" : "amber"}>{ai.label}</Badge></p>
         {ai.problem && <div className="mt-2"><Alert tone="error">{ai.problem}</Alert></div>}
-        <p className="mt-2 text-sm text-muted">The AI provider and its API key are configured on the server by whoever deploys InquiryDesk (environment variables <code>AI_PROVIDER</code> and <code>ANTHROPIC_API_KEY</code>). Keys are never entered in the browser or stored in the database. An AI API account is billed separately from Claude or ChatGPT subscriptions.</p>
+        <p className="mt-2 text-sm text-muted">The AI provider and its key are set on the server by whoever deploys InquiryDesk: <code>AI_PROVIDER</code> = <code>gemini</code> with <code>GEMINI_API_KEY</code> (Google AI Studio, free tier available), or <code>anthropic</code> with <code>ANTHROPIC_API_KEY</code>. Keys are never entered in the browser or stored in the database. On Gemini&apos;s free tier Google may use and review submitted content, so use sample documents only; use a paid key for real customer data.</p>
       </Card>
     </div>
   );

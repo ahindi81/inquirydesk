@@ -83,7 +83,7 @@ export class AIError extends Error {
 }
 
 export interface AIProvider {
-  readonly name: "anthropic" | "openai" | "rules";
+  readonly name: "anthropic" | "openai" | "gemini" | "rules";
   readonly model: string;
   /** false = deterministic rule-based reader, must never be presented as AI. */
   readonly isAI: boolean;
