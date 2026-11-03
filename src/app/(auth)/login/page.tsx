@@ -11,6 +11,7 @@ export default async function LoginPage({ searchParams }: PageProps<"/login">) {
     <div className="space-y-4">
       {sp.confirmed && <Alert tone="success">Your email is confirmed. Sign in to continue.</Alert>}
       {sp.error_description && <Alert tone="error">{String(sp.error_description)}</Alert>}
+      {typeof sp.error === "string" && !sp.error_description && <Alert tone="error">{sp.error}</Alert>}
       <LoginForm />
     </div>
   );

@@ -1,7 +1,7 @@
 "use server";
 import { redirect } from "next/navigation";
 import { z } from "zod";
-import { signIn, signOut, signUp, getSessionUser, setActiveCompany, listMemberships } from "@/lib/server/auth";
+import { signIn, signOut, signUp, getSessionUser, setActiveCompany, listMemberships, requestPasswordReset, updatePassword } from "@/lib/server/auth";
 import { asUser } from "@/lib/server/db";
 import { createDemoWorkspace } from "@/lib/server/demo";
 
@@ -63,4 +63,19 @@ export async function switchCompanyAction(fd: FormData) {
   const id = String(fd.get("companyId") ?? "");
   if ((await listMemberships(user.id)).some((m) => m.companyId === id)) await setActiveCompany(id);
   redirect("/");
+}
+
+export async function forgotPasswordAction(_: FormState, fd: FormData): Promise<FormState> {
+  const err = await requestPasswordReset(String(fd.get("email") ?? ""));
+  if (err) return { error: err };
+  return { message: "If an account exists for this email, we've sent a link to reset your password. Check your inbox (and spam folder), then open the link in this same browser." };
+}
+
+export async function resetPasswordAction(_: FormState, fd: FormData): Promise<FormState> {
+  if (!(await getSessionUser())) return { error: "Your reset link has expired. Request a new one." };
+  const password = String(fd.get("password") ?? "");
+  if (password !== String(fd.get("confirm") ?? "")) return { error: "The two passwords don't match." };
+  const err = await updatePassword(password);
+  if (err) return { error: err };
+  redirect("/?password=updated");
 }

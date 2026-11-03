@@ -119,16 +119,70 @@ export async function signUp(email: string, password: string, fullName: string):
     return { error: null };
   }
   const supabase = await supabaseClient();
-  // Confirmation emails link back to this site (SITE_URL when set, otherwise the address being used now).
-  // Supabase only honours it if the address is in its allowed redirect list; otherwise it uses its Site URL.
-  const h = await headers();
-  const origin = process.env.SITE_URL ?? (h.get("host") ? `${h.get("x-forwarded-proto") ?? "https"}://${h.get("host")}` : undefined);
+  const origin = await siteOrigin();
   const { data, error } = await supabase.auth.signUp({ email, password, options: {
     data: { full_name: fullName },
     emailRedirectTo: origin ? `${origin}/login?confirmed=1` : undefined,
   } });
   if (error) return { error: error.message };
   return { error: null, needsEmailConfirmation: !data.session };
+}
+
+/**
+ * Address that emailed links should return to: SITE_URL when set, otherwise the
+ * address being used right now (so the installed and online versions each work).
+ * Supabase only honours it if it is in the project's allowed redirect URLs;
+ * otherwise it falls back to the project's Site URL.
+ */
+async function siteOrigin(): Promise<string | undefined> {
+  const h = await headers();
+  const host = h.get("host");
+  if (host && /^(localhost|127\.0\.0\.1)(:\d+)?$/.test(host)) return `http://${host}`;
+  return process.env.SITE_URL ?? (host ? `${h.get("x-forwarded-proto") ?? "https"}://${host}` : undefined);
+}
+
+/** Sends a password-reset email. Always reports success so it never reveals whether an account exists. */
+export async function requestPasswordReset(email: string): Promise<string | null> {
+  email = email.trim().toLowerCase();
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return "Enter a valid email address.";
+  if (driver() === "local") return "Password reset by email is not available in local development mode.";
+  const supabase = await supabaseClient();
+  const origin = await siteOrigin();
+  const { error } = await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: origin ? `${origin}/auth/callback?next=/reset-password` : undefined,
+  });
+  if (error && /rate limit|too many/i.test(error.message))
+    return "Too many emails were requested. Please wait a few minutes and try again.";
+  if (error) console.error("[auth] reset email failed:", error.message);
+  return null;
+}
+
+/** Completes an emailed link (password reset or email confirmation) and starts a session. */
+export async function completeEmailLink(params: { code?: string | null; tokenHash?: string | null; type?: string | null }):
+  Promise<string | null> {
+  const supabase = await supabaseClient();
+  if (params.code) {
+    const { error } = await supabase.auth.exchangeCodeForSession(params.code);
+    if (error) return "This link has expired or was opened in a different browser. Request a new one and open it in the same browser.";
+    return null;
+  }
+  if (params.tokenHash && params.type) {
+    const { error } = await supabase.auth.verifyOtp({ token_hash: params.tokenHash, type: params.type as "recovery" | "email" | "signup" });
+    if (error) return "This link has expired or was already used. Request a new one.";
+    return null;
+  }
+  return "This link is incomplete. Request a new one.";
+}
+
+export async function updatePassword(password: string): Promise<string | null> {
+  if (password.length < 10) return "Use a password of at least 10 characters.";
+  if (driver() === "local") return "Not available in local development mode.";
+  const supabase = await supabaseClient();
+  const { error } = await supabase.auth.updateUser({ password });
+  if (!error) return null;
+  if (/same|different from the old/i.test(error.message)) return "Choose a password different from your old one.";
+  if (/session|not authenticated|jwt/i.test(error.message)) return "Your reset link has expired. Request a new one.";
+  return error.message;
 }
 
 export async function signOut() {

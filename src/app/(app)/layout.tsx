@@ -32,7 +32,10 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
           {switcher}
           <p className="text-navy-200" title={ai.problem}>{ai.label}</p>
           <p className="truncate text-navy-200">{user.email} · {company.role === "admin" ? "Admin" : "Salesperson"}</p>
-          <form action={logoutAction}><button className="text-navy-100 underline hover:text-white" type="submit">Sign out</button></form>
+          <div className="flex gap-3">
+            <a className="text-navy-100 underline hover:text-white" href="/reset-password">Change password</a>
+            <form action={logoutAction}><button className="text-navy-100 underline hover:text-white" type="submit">Sign out</button></form>
+          </div>
         </div>
       </aside>
       <div className="min-w-0 flex-1">

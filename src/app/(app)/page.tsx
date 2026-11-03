@@ -35,6 +35,7 @@ export default async function Dashboard({ searchParams }: PageProps<"/">) {
         </div>
         <ButtonLink href="/inquiries/new">New inquiry</ButtonLink>
       </div>
+      {sp.password === "updated" && <Alert tone="success">Your password has been changed.</Alert>}
       {sp.error === "admin-only" && <Alert tone="warning">That page is available to workspace admins only.</Alert>}
 
       {data.products === 0 && (
