@@ -106,6 +106,15 @@ type RunKind = "extract" | "summarize" | "match";
  */
 async function beginRun(ctx: Ctx, inquiryId: string, kind: RunKind, provider: AIProvider, fingerprint: string) {
   const key = sha(`${kind}:${inquiryId}:${provider.name}:${provider.model}:${fingerprint}`);
+  return beginRunTx(ctx, inquiryId, kind, provider, key).catch((e) => {
+    // Plan limits and expired subscriptions are enforced by the database with a readable message.
+    const err = e as { code?: string; message?: string };
+    if (err?.code === "23514" && err.message) throw new AIError("quota", err.message);
+    throw e;
+  });
+}
+
+async function beginRunTx(ctx: Ctx, inquiryId: string, kind: RunKind, provider: AIProvider, key: string) {
   return asUser(ctx.user.id, async (tx) => {
     const [existing] = await tx<{ id: string; status: string; created_at: Date; output: unknown }[]>`
       select id, status, created_at, output from ai_runs where company_id = ${ctx.company.companyId} and idempotency_key = ${key} for update`;

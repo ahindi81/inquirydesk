@@ -2,12 +2,17 @@ import { requireCtx } from "@/lib/server/auth";
 import { logoutAction, switchCompanyAction } from "@/app/actions/auth";
 import { Nav } from "@/components/nav";
 import { providerStatus } from "@/lib/ai";
+import { getSubscription, isPlatformOwner, subscriptionNotice } from "@/lib/server/billing";
 
 // Signed-in pages depend on the user's session, so they are always rendered per request.
 export const dynamic = "force-dynamic";
 
 export default async function AppLayout({ children }: LayoutProps<"/">) {
-  const { user, company, memberships } = await requireCtx();
+  const ctx = await requireCtx();
+  const { user, company, memberships } = ctx;
+  const [sub, owner] = await Promise.all([getSubscription(ctx), isPlatformOwner(user.id)]);
+  const notice = company.isDemo ? null : subscriptionNotice(sub);
+  const billing = !company.isDemo && !!sub?.billing_enabled;
   const ai = providerStatus({ demo: company.isDemo });
   const switcher = memberships.length > 1 && (
     <form action={switchCompanyAction} className="flex gap-1">
@@ -26,8 +31,8 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
           <p className="text-lg font-semibold">Inquiry<span className="text-brand-500">Desk</span></p>
           <p className="truncate text-xs text-navy-200 lg:mt-1" dir="auto">{company.companyName}</p>
         </div>
-        <div className="px-2 pb-2 lg:hidden"><Nav horizontal /></div>
-        <div className="hidden flex-1 px-2 lg:block"><Nav /></div>
+        <div className="px-2 pb-2 lg:hidden"><Nav horizontal billing={billing} owner={owner} /></div>
+        <div className="hidden flex-1 px-2 lg:block"><Nav billing={billing} owner={owner} /></div>
         <div className="hidden space-y-3 border-t border-navy-800 p-4 text-xs lg:block">
           {switcher}
           <p className="text-navy-200" title={ai.problem}>{ai.label}</p>
@@ -42,6 +47,11 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
         {company.isDemo && (
           <div className="no-print border-b border-amber-200 bg-amber-50 px-4 py-2 text-sm text-amber-900" role="status">
             <strong>Demo workspace.</strong> Fictional products and customers. Processing here uses the rule-based reader, not live AI.
+          </div>
+        )}
+        {notice && (
+          <div className={`no-print border-b px-4 py-2 text-sm ${notice.tone === "error" ? "border-red-200 bg-red-50 text-red-900" : "border-amber-200 bg-amber-50 text-amber-900"}`} role="status">
+            {notice.text} <a className="font-medium underline" href="/billing">Subscription</a>
           </div>
         )}
         <div className="flex items-center justify-between gap-2 border-b border-line bg-white px-4 py-2 text-xs text-muted lg:hidden no-print">
