@@ -47,6 +47,15 @@ export async function asUser<T>(userId: string, fn: (tx: Tx) => Promise<T>): Pro
   }) as Promise<T>;
 }
 
+/** Run queries as a visitor who is not signed in (only functions granted to `anon` work). */
+export async function asAnon<T>(fn: (tx: Tx) => Promise<T>): Promise<T> {
+  return sql.begin(async (tx) => {
+    await tx`select set_config('request.jwt.claims', ${JSON.stringify({ role: "anon" })}, true)`;
+    await tx`set local role anon`;
+    return fn(tx);
+  }) as Promise<T>;
+}
+
 /** Postgres error → message safe to show a user. */
 export function dbErrorMessage(e: unknown): string {
   const err = e as { code?: string; message?: string };

@@ -114,7 +114,13 @@ export async function signIn(email: string, password: string): Promise<string | 
   return "Email or password is incorrect.";
 }
 
-export async function signUp(email: string, password: string, fullName: string):
+/** Only same-site relative paths are allowed as a place to return to after signing in. */
+export function safeNext(next: unknown): string | null {
+  const n = typeof next === "string" ? next : "";
+  return /^\/(?!\/)[\w\-./?=&%]*$/.test(n) ? n : null;
+}
+
+export async function signUp(email: string, password: string, fullName: string, next?: string | null):
   Promise<{ error: string | null; needsEmailConfirmation?: boolean }> {
   email = email.trim().toLowerCase();
   if (password.length < 10) return { error: "Use a password of at least 10 characters." };
@@ -131,7 +137,7 @@ export async function signUp(email: string, password: string, fullName: string):
   const origin = await siteOrigin();
   const { data, error } = await supabase.auth.signUp({ email, password, options: {
     data: { full_name: fullName },
-    emailRedirectTo: origin ? `${origin}/login?confirmed=1` : undefined,
+    emailRedirectTo: origin ? `${origin}/login?confirmed=1${next ? `&next=${encodeURIComponent(next)}` : ""}` : undefined,
   } });
   if (error) return { error: error.message };
   return { error: null, needsEmailConfirmation: !data.session };
@@ -143,7 +149,7 @@ export async function signUp(email: string, password: string, fullName: string):
  * Supabase only honours it if it is in the project's allowed redirect URLs;
  * otherwise it falls back to the project's Site URL.
  */
-async function siteOrigin(): Promise<string | undefined> {
+export async function siteOrigin(): Promise<string | undefined> {
   const h = await headers();
   const host = h.get("host");
   if (host && /^(localhost|127\.0\.0\.1)(:\d+)?$/.test(host)) return `http://${host}`;

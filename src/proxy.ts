@@ -13,7 +13,9 @@ export function proxy(request: NextRequest) {
   // Password-reset links carry type=recovery; for PKCE codes we can't tell, so offer the reset page,
   // which simply lets a signed-in person choose a new password.
   const isConfirmation = url.searchParams.get("type") === "signup" || url.searchParams.has("confirmed");
-  target.searchParams.set("next", isConfirmation ? "/" : "/reset-password");
+  const wanted = url.searchParams.get("next");
+  const safe = wanted && /^\/(?!\/)/.test(wanted) ? wanted : "/";
+  target.searchParams.set("next", isConfirmation ? safe : "/reset-password");
   return NextResponse.redirect(target);
 }
 

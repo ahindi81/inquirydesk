@@ -17,3 +17,6 @@ end $$;
 grant authenticated to app_server;
 grant usage on schema local_auth to app_server;
 grant select, insert on local_auth.users to app_server;
+
+-- Lets the app server look up invitation links for visitors who are not signed in.
+grant anon to app_server;

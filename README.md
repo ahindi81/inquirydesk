@@ -17,7 +17,9 @@ The first complete workflow, tested end to end in a browser:
 6. **Matches**: suggestions only from your own catalogue, labelled Potential match / Alternative / No match, with
    similarities, differences and missing evidence. Approve, reject, or choose another product manually.
 7. **Drafts**: editable clarification email (never sent automatically); quotation built from approved lines.
-8. **Quotation**: edit quantities/prices/discounts/terms, approve exchange rates, approve each line, approve the quotation
+8. **Team**: admins invite colleagues by link (email + role); links work once, only for the invited email, expire after
+   7 days, and can be renewed or cancelled. InquiryDesk never sends the link itself.
+9. **Quotation**: edit quantities/prices/discounts/terms, approve exchange rates, approve each line, approve the quotation
    (locks it), create revisions, export PDF / Excel / CSV.
 
 ### Safety rules enforced in code
@@ -32,7 +34,6 @@ The first complete workflow, tested end to end in a browser:
 - AI runs are idempotent (a retry or double-click does not call the provider twice) and rate-limited per user.
 
 ## Not done yet
-- Email invitations for team members (team page lists members and changes roles only).
 - OpenAI provider (Anthropic is implemented; OpenAI shows a clear "not implemented" message).
 - Scanned documents without Tesseract on the server are reported as unreadable (not sent to the AI's own reader yet).
 - Not yet tested with a real Anthropic API key (the AI failure path is tested).
@@ -41,7 +42,7 @@ The first complete workflow, tested end to end in a browser:
 
 1. Install **Node.js 22.18+** (LTS) from nodejs.org.
 2. Create a free project at **supabase.com**. In its **SQL Editor**, run these files in order:
-   `supabase/migrations/0001_core_schema.sql`, `0002_storage.sql`, `0003_drafts.sql`.
+   `supabase/migrations/0001_core_schema.sql`, `0002_storage.sql`, `0003_drafts.sql`, `0004_invitations.sql`.
 3. In Supabase → Authentication → Providers, keep **Email** enabled.
 4. Copy `.env.example` to `.env.local` and fill in the values from your Supabase project settings.
    Optional: add your Anthropic API key (billed separately from any Claude subscription).
@@ -67,9 +68,10 @@ The first complete workflow, tested end to end in a browser:
 | Suite | Command | Result here |
 |---|---|---|
 | Quotation maths + evidence checker | `npm test` | 20/20 pass |
-| Database security & rules (needs local PostgreSQL) | `npm run test:db` | 37/37 pass |
+| Database security & rules incl. invitations (needs local PostgreSQL) | `npm run test:db` | 60/60 pass |
 | Full browser workflow (demo data) | `node e2e/workflow.mjs` | 32/32 pass |
 | Catalogue import + AI failure handling | `node e2e/real-company.mjs` | 8/8 pass |
+| Team invitations | `node e2e/invitations.mjs` | 18/18 pass |
 
 The browser tests ran against a local PostgreSQL database with the same migrations, using a development-only
 sign-in stand-in (`AUTH_DRIVER=local`, refused in production builds) and local file storage. The Supabase sign-in

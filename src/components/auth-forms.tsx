@@ -4,35 +4,37 @@ import { useActionState } from "react";
 import { loginAction, signupAction, createCompanyAction, forgotPasswordAction, resetPasswordAction, type FormState } from "@/app/actions/auth";
 import { Alert, Button, Field, Input } from "./ui";
 
-export function LoginForm() {
+export function LoginForm({ next, email }: { next?: string; email?: string } = {}) {
   const [state, action, pending] = useActionState<FormState, FormData>(loginAction, undefined);
   return (
     <form action={action} className="space-y-4">
       <h1 className="text-lg font-semibold">Sign in</h1>
+      {next && <input type="hidden" name="next" value={next} />}
       {state?.error && <Alert tone="error">{state.error}</Alert>}
-      <Field label="Email" htmlFor="email"><Input id="email" name="email" type="email" autoComplete="email" required /></Field>
+      <Field label="Email" htmlFor="email"><Input id="email" name="email" type="email" autoComplete="email" defaultValue={email} required /></Field>
       <Field label="Password" htmlFor="password"><Input id="password" name="password" type="password" autoComplete="current-password" required /></Field>
       <div className="-mt-2 text-end text-sm"><Link className="text-brand-700 underline" href="/forgot-password">Forgot your password?</Link></div>
       <Button type="submit" disabled={pending} className="w-full">{pending ? "Signing in…" : "Sign in"}</Button>
-      <p className="text-center text-sm text-muted">New here? <Link className="font-medium text-brand-700 underline" href="/signup">Create an account</Link></p>
+      <p className="text-center text-sm text-muted">New here? <Link className="font-medium text-brand-700 underline" href={next ? `/signup?next=${encodeURIComponent(next)}${email ? `&email=${encodeURIComponent(email)}` : ""}` : "/signup"}>Create an account</Link></p>
     </form>
   );
 }
 
-export function SignupForm() {
+export function SignupForm({ next, email }: { next?: string; email?: string } = {}) {
   const [state, action, pending] = useActionState<FormState, FormData>(signupAction, undefined);
   return (
     <form action={action} className="space-y-4">
       <h1 className="text-lg font-semibold">Create your account</h1>
+      {next && <input type="hidden" name="next" value={next} />}
       {state?.error && <Alert tone="error">{state.error}</Alert>}
       {state?.message && <Alert tone="success">{state.message}</Alert>}
       <Field label="Your name" htmlFor="fullName"><Input id="fullName" name="fullName" autoComplete="name" required /></Field>
-      <Field label="Work email" htmlFor="email"><Input id="email" name="email" type="email" autoComplete="email" required /></Field>
+      <Field label="Work email" htmlFor="email"><Input id="email" name="email" type="email" autoComplete="email" defaultValue={email} required /></Field>
       <Field label="Password" htmlFor="password" hint="At least 10 characters.">
         <Input id="password" name="password" type="password" autoComplete="new-password" minLength={10} required />
       </Field>
       <Button type="submit" disabled={pending} className="w-full">{pending ? "Creating account…" : "Create account"}</Button>
-      <p className="text-center text-sm text-muted">Already registered? <Link className="font-medium text-brand-700 underline" href="/login">Sign in</Link></p>
+      <p className="text-center text-sm text-muted">Already registered? <Link className="font-medium text-brand-700 underline" href={next ? `/login?next=${encodeURIComponent(next)}${email ? `&email=${encodeURIComponent(email)}` : ""}` : "/login"}>Sign in</Link></p>
     </form>
   );
 }

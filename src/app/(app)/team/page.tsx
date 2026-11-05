@@ -2,6 +2,7 @@ import { requireCtx } from "@/lib/server/auth";
 import { asUser } from "@/lib/server/db";
 import { updateMemberAction } from "@/app/actions/settings";
 import { Alert, Badge, PageHeader, Table, fmtDate, td, th } from "@/components/ui";
+import { InviteForm, PendingInvites, type PendingInvite } from "@/components/team-invites";
 
 export const metadata = { title: "Team" };
 export default async function TeamPage() {
@@ -9,10 +10,16 @@ export default async function TeamPage() {
   const members = await asUser(user.id, (tx) => tx<{ user_id: string; full_name: string | null; role: string; created_at: Date }[]>`
     select user_id, full_name, role, created_at from company_members where company_id = ${company.companyId} order by role, full_name`);
   const admin = company.role === "admin";
+  const invites = admin ? await asUser(user.id, (tx) => tx<PendingInvite[]>`
+    select id, email, role, created_at::text, expires_at::text, expires_at < now() as expired from invitations
+     where company_id = ${company.companyId} and accepted_at is null and revoked_at is null order by created_at desc`) : [];
   return (
     <div className="space-y-5">
       <PageHeader title="Team" subtitle="Admins manage the catalogue, prices, company settings and team. Salespeople work on inquiries and quotations." />
-      <Alert tone="info">Adding colleagues by email invitation is not built yet — it is the next team feature. Until then, each person who signs up gets their own separate workspace.</Alert>
+      {admin && !company.isDemo && <InviteForm companyName={company.companyName} />}
+      {admin && company.isDemo && <Alert tone="info">Invitations are turned off in the demo workspace. Switch to your company workspace to invite colleagues.</Alert>}
+      {!admin && <Alert tone="info">Ask a workspace admin to invite new colleagues.</Alert>}
+      <PendingInvites invites={invites} companyName={company.companyName} />
       <Table>
         <thead><tr><th className={th}>Name</th><th className={th}>Role</th><th className={th}>Member since</th>{admin && <th className={th}>Actions</th>}</tr></thead>
         <tbody>

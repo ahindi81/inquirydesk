@@ -17,7 +17,7 @@ export async function GET(req: Request) {
     // A code means Supabase already accepted the link. For email confirmation that's all
     // that matters, so send the person to sign in instead of showing an error.
     if (url.searchParams.get("code") && safeNext !== "/reset-password")
-      return NextResponse.redirect(new URL("/login?confirmed=1", base));
+      return NextResponse.redirect(new URL(`/login?confirmed=1${safeNext !== "/" ? `&next=${encodeURIComponent(safeNext)}` : ""}`, base));
     const target = safeNext === "/reset-password" ? "/forgot-password" : "/login";
     return NextResponse.redirect(new URL(`${target}?error=${encodeURIComponent(err)}`, base));
   }

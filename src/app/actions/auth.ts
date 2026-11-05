@@ -1,7 +1,7 @@
 "use server";
 import { redirect } from "next/navigation";
 import { z } from "zod";
-import { signIn, signOut, signUp, getSessionUser, setActiveCompany, listMemberships, requestPasswordReset, updatePassword, startSessionFromLinkTokens } from "@/lib/server/auth";
+import { signIn, signOut, signUp, getSessionUser, setActiveCompany, listMemberships, requestPasswordReset, updatePassword, startSessionFromLinkTokens, safeNext } from "@/lib/server/auth";
 import { asUser } from "@/lib/server/db";
 import { createDemoWorkspace } from "@/lib/server/demo";
 
@@ -13,7 +13,7 @@ export async function loginAction(_: FormState, fd: FormData): Promise<FormState
   if (!email || !password) return { error: "Enter your email and password." };
   const err = await signIn(email, password);
   if (err) return { error: err };
-  redirect("/");
+  redirect(safeNext(fd.get("next")) ?? "/");
 }
 
 export async function signupAction(_: FormState, fd: FormData): Promise<FormState> {
@@ -23,10 +23,11 @@ export async function signupAction(_: FormState, fd: FormData): Promise<FormStat
     password: z.string().min(10, "Use a password of at least 10 characters."),
   }).safeParse({ fullName: fd.get("fullName"), email: fd.get("email"), password: fd.get("password") });
   if (!parsed.success) return { error: parsed.error.issues[0].message };
-  const res = await signUp(parsed.data.email, parsed.data.password, parsed.data.fullName);
+  const next = safeNext(fd.get("next"));
+  const res = await signUp(parsed.data.email, parsed.data.password, parsed.data.fullName, next);
   if (res.error) return { error: res.error };
   if (res.needsEmailConfirmation) return { message: "Check your email to confirm your account, then sign in." };
-  redirect("/onboarding");
+  redirect(next ?? "/onboarding");
 }
 
 export async function logoutAction() {
